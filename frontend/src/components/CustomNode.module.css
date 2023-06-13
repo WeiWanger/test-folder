@@ -1,0 +1,60 @@
+.root {
+  align-items: center;
+  display: grid;
+  grid-template-columns: auto auto 1fr auto;
+  height: 40px;
+  padding-inline-end: 24px;
+}
+
+.expandIconWrapper {
+  align-items: center;
+  font-size: 0;
+  cursor: pointer;
+  display: flex;
+  height: 24;
+  justify-content: center;
+  width: 30px;
+  transition: transform liner 0.1s;
+  transform: rotate(0deg);
+}
+.expandIconWrapper.isOpen {
+  transform: rotate(90deg);
+}
+.labelGridItem {
+  padding-inline-start: 4px;
+}
+.folderField {
+  display: flex;
+  align-items: center;
+  justify-self: start;
+}
+.folder_title {
+  width: 200px;
+}
+.actionButton {
+  display: flex;
+  padding: 0 4px;
+  position: relative;
+}
+.inputWrapper {
+  align-items: center;
+  display: grid;
+  grid-template-columns: repeat(3, auto);
+  justify-content: flex-start;
+}
+.textField input {
+  font-size: 14px;
+  padding: 6px 0;
+}
+.editButton {
+  padding: 6px;
+}
+.editIcon {
+  font-size: 20px;
+}
+.nodeInput {
+  width: 200px;
+}
+.nodeLabel {
+  padding-right: 15px;
+}
