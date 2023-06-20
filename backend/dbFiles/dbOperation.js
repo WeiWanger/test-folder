@@ -1,165 +1,225 @@
-const config = require("./dbConfig");
-const sql = require("mssql");
+const config = require("./dbConfig"),
+  sql = require("mssql");
 
-//Get All Data
-const getIteration = async () => {
+//////////////////////////////////
+const getIterations = async () => {
   try {
+    // console.log('Connecting to database');
     let pool = await sql.connect(config);
-    let iterations = await pool
+    // console.log('Connected to database');
+    let Iterations = await pool
       .request()
-      .query(`SELECT * from iterationFolderTable`);
-    // console.log(folders);
-    return iterations.recordset;
-    console.log(iterations.recordset);
+      .query("SELECT * from IterationTable_test");
+    return Iterations.recordset;
   } catch (error) {
     console.log(error);
   }
 };
-
-//Create a new iteration
-const createIteration = async (Iteration) => {
-  console.log(typeof Iteration.email);
+///////////////////////////////////
+const getRelations = async () => {
+  try {
+    // console.log('Connecting to database');
+    let pool = await sql.connect(config);
+    // console.log('Connected to database');
+    let Iterations = await pool
+      .request()
+      .query("SELECT * from RelationTable_test");
+    return Iterations.recordset;
+  } catch (error) {
+    console.log(error);
+  }
+};
+//////////////////////////////////
+const getfolders = async () => {
+  try {
+    // console.log('Connecting to database');
+    let pool = await sql.connect(config);
+    // console.log('Connected to database');
+    let Iterations = await pool
+      .request()
+      .query("SELECT * from FolderTable_test");
+    return Iterations.recordset;
+  } catch (error) {
+    console.log(error);
+  }
+};
+/////////////////////////////////////
+const createfolder = async (Iteration) => {
   try {
     let pool = await sql.connect(config);
-    let emailID = Iteration.email.split("@")[0];
-    let data = await pool.request().query("SELECT * from iterationFolderTable");
-
+    let emailID = Iteration.Email.split("@")[0];
+    let data = await pool.request().query("SELECT * from FolderTable_test");
+    // console.log(data);
     let Iters = data.recordset;
-    console.log(data.recordset);
     let flag = 0;
+    //to create a unique id
+    //"emailID + . + #"
     for (let i = 0; i < Iters.length; i++) {
-      if (Iters[i].id.split(".")[0] == emailID) {
-        flag = Iters[i].id.split(".")[1] * 1;
+      if (
+        Iters[i].FolderID.split(".")[0] == emailID &&
+        flag < Iters[i].FolderID.split(".")[1] * 1
+      ) {
+        flag = Iters[i].FolderID.split(".")[1] * 1;
       }
+      // console.log(flag);
     }
 
     let id = emailID + "." + (flag + 1);
+    // console.log(id)
     let iterations = pool.request().query(
-      `INSERT INTO iterationFolderTable VALUES 
-      ('${id}', '${Iteration.parent}', '${Iteration.email}', '${Iteration.text}',  CAST('${Iteration.droppable}' AS BIT))`
+      `insert into FolderTable_test values
+            ('${id}','${Iteration.ParentFolderID}','${Iteration.FolderName}','${Iteration.Email}','${Iteration.Type}')`
     );
-    console.log(1);
+    // console.log(flag);
     return id;
   } catch (error) {
     console.log(error);
   }
 };
-
-//Update the name of folder
-
+////////////////////////////////////////
 const updateFolderName = async (id, content) => {
   try {
     let pool = await sql.connect(config);
     let result = await pool
       .request()
       .query(
-        `UPDATE iterationFolderTable SET ='${content}' where FolderID ='${id}'`
+        `UPDATE FolderTable_test SET FolderName = '${content}' WHERE FolderID = '${id}'`
       );
-    return result;
   } catch (error) {
     console.log(error);
   }
 };
+////////////////////////////////////////
+const dragFile = async (id, parent, email, type) => {
+  let pool = await sql.connect(config);
+  let flag = 0;
+  let data = await pool.request().query("SELECT * from RelationTable_test");
+  let Iters = data.recordset;
+  let check = false;
+  let temp;
+  let typeCheck = "official";
 
-//Delete folders
-const deleteFolder = async (id) => {
-  try {
-    let pool = await sql.connect(config);
-    let folderData = await pool
-      .request()
-      .query("SELECT * FROM iterationFolderTable ");
-    let Iterdata = await pool
-      .request()
-      .query(`SELECT * FROM iterationFolderTable`);
-    let Folders = folderData.recordset;
-    let Iters = Iterdata.recordset
-    let UpdateFolder = await pool
-      .request()
-      .query(
-        `SELECT ParentFolderID from iterationFolderTable where FolderID ='${id}'`
-      );
-    let oldParent = UpdateFolder.recordset[0].ParentFolderID;
-    for (let i = 0; i < Folders.length; i++) {
-      if (Folders[i].ParentFolderID === id) {
-        let result = await pool
-          .request()
-          .query(
-            `UPDATE iterationFolderTable SET ParentFolderID = '${oldParent}' WHERE FolderID='${Folders[i].FolderID}'`
-          );
-      }
-    }
+  let UpdateFolder = await pool
+    .request()
+    .query(`SELECT * from FolderTable_test WHERE FolderID = '${parent}'`);
 
-    for (let j = 0; j < Iters.length; j++) {
-     if(Iters[j].FolderID === id){
-      let result = await pool.request().query(
-        `UPDATE iterationFolderTable SET FolderID = '${oldParent}' WHERE ID=${Iters[j].ID}`
-      )
-     }
-      
-    }
-
-    let result = await pool
-      .request()
-      .query(`DELETE FROM iterationFolderTable WHERE FolderID='${id}'`);
-  } catch (error) {
-    console.log(error);
+  if (type != UpdateFolder.recordset[0].Type) {
+    return -1;
   }
-};
+  if (email != UpdateFolder.recordset[0].Email) {
+    return -2;
+  }
 
-//Delete Files
-const deleteFile = async (id, email) => {
-  try {
-    let pool = await sql.connect(config);
-    let result = await pool.request.query(
-      `DELETE FROM iterationFolderTable WHERE ID=${
+  let similarIters = await pool
+    .request()
+    .query(
+      `SELECT * from RelationTable_test WHERE ID = ${
         id * 1
-      } AND Email= '${email}'`
+      } and Email = '${email}'`
     );
-  } catch (error) {
-    console.log(error);
+    console.log(similarIters.recordsets[0]);
+      // return -12;
+  for (let j = 0; j < similarIters.recordsets[0].length; j++) {
+    //complare the type of the iteration and the existing iteration that share the same ID and email
+    temp = await pool
+      .request()
+      .query(`SELECT Type from FolderTable_test WHERE FolderID = '${similarIters.recordsets[0][j].FolderID}'`);
+
+    typeCheck = temp.recordset[0].Type;
+     console.log(type);
+     console.log(typeCheck);
+
+    check = Boolean(type === typeCheck);//true: same type exists, not allowed; false: allowed
+  }
+  if (!check) {
+    // console.log('ooooo');
+    //no such file in any folder before, so create a new row
+    let iterations = pool.request().query(
+      `insert into RelationTable_test values
+              ('${id * 1}','${parent}','${email}')`
+    );
+  } else {
+    // console.log('IIIII');
+    //the file is already in a folder, so update the old row
+    let result = await pool.request().query(
+      `UPDATE RelationTable_test SET FolderID = '${parent}' WHERE ID = ${
+        id * 1
+      } AND Email = '${email}'
+          UPDATE RelationTable_test SET Email = '${email}' WHERE ID = ${
+        id * 1
+      } AND Email = '${email}'`
+    );
   }
 };
-
-//Drag and Drop Files
-const dragFile = async (id, parent, email) => {
-  try {
-    let pool = await sql.connect(config);
-    let flag = 0;
-    let data = await pool.request().query(`SELECT * FROM iterationFolderTable`);
-    let Iters = data.recordset;
-    for (let i = 0; i < Iters.length; i++) {
-      if (Iters[i].email === email) {
-        if (Iters[i].id === id * 1) {
-          flag++;
-        }
-      }
-    }
-    if (flag === 0) {
-      let iterations = pool.request().query(
-        `INSERT INTO iterationFolderTable 
-        ('${id * 1}', '${parent}', '${email}')`
-      );
-    } else {
-      let result = await pool.request()
-        .query(`UPDATE iterationFolderTable SET id = '${parent}' WHERE id=${
-        id * 1
-      } AND email = '${email}' 
-      UPDATE iterationFolderTable SET email='${email}' WHERE id = ${
-        id * 1
-      } AND email = '${email}'`);
-    }
-  } catch (error) {
-    console.log(error);
-  }
-};
-
+////////////////////////////////////////
 const dragFolder = async (id, content) => {
   try {
     let pool = await sql.connect(config);
     let result = await pool
       .request()
       .query(
-        `UPDATE iterationFolderTable SET parent ='${content}' WHERE ID = '${id}'`
+        `UPDATE FolderTable_test SET ParentFolderID = '${content}' WHERE FolderID = '${id}'`
+      );
+  } catch (error) {
+    console.log(error);
+  }
+};
+////////////////////////////////////////
+const deleteFolder = async (id) => {
+  try {
+    let pool = await sql.connect(config);
+    let folderData = await pool
+      .request()
+      .query("SELECT * from FolderTable_test");
+    let Iterdata = await pool
+      .request()
+      .query("SELECT * from RelationTable_test");
+    let Folders = folderData.recordset;
+    let Iters = Iterdata.recordset;
+    //record the old parent value
+    let UpdateFolder = await pool
+      .request()
+      .query(
+        `SELECT ParentFolderID from FolderTable_test WHERE FolderID = '${id}'`
+      );
+    let oldParent = UpdateFolder.recordset[0].ParentFolderID;
+
+    let result1 = await pool
+      .request()
+      .query(
+        `UPDATE FolderTable_test SET ParentFolderID = '${oldParent}' WHERE ParentFolderID = '${id}'`
+      );
+
+    if (oldParent === "0") {
+      let result2 = await pool
+        .request()
+        .query(`DELETE FROM RelationTable_test WHERE FolderID = '${id}'`);
+    } else {
+      let result2 = await pool
+        .request()
+        .query(
+          `UPDATE RelationTable_test SET FolderID = '${oldParent}' WHERE FolderID =' ${id}'`
+        );
+    }
+
+    let result = await pool
+      .request()
+      .query(`DELETE FROM FolderTable_test WHERE FolderID = '${id}'`);
+  } catch (error) {
+    console.log(error);
+  }
+};
+//////////////////////////////////////////
+const deleteFile = async (id, email) => {
+  try {
+    let pool = await sql.connect(config);
+
+    let result = await pool
+      .request()
+      .query(
+        `DELETE FROM RelationTable_test WHERE ID = ${
+          id * 1
+        } AND Email = '${email}'`
       );
   } catch (error) {
     console.log(error);
@@ -167,11 +227,13 @@ const dragFolder = async (id, content) => {
 };
 
 module.exports = {
-  getIteration,
-  createIteration,
+  getIterations,
+  getRelations,
+  getfolders,
+  createfolder,
   updateFolderName,
-  deleteFolder,
-  deleteFile,
   dragFile,
   dragFolder,
+  deleteFolder,
+  deleteFile,
 };
