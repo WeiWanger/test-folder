@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState, useParams } from "react";
+import React, { useEffect, useState } from "react";
 import Button from "@mui/material/Button";
 import AddIcon from "@mui/icons-material/Add";
 import { DndProvider } from "react-dnd";
@@ -6,7 +6,6 @@ import {
   Tree,
   MultiBackend,
   getBackendOptions,
-  getDescendants,
 } from "@minoru/react-dnd-treeview";
 import { CustomNode } from "./components/CustomNode";
 import { AddDialog } from "./components/AddDialog";
@@ -45,58 +44,80 @@ function compareArray(arr1, arr2) {
   return result;
 }
 
-function App() {
+function App({ dataType }) {
   const [treeData, setTreeData] = useState([]);
 
+  const [open, setOpen] = useState(false);
+  const handleOpenDialog = () => setOpen(true);
+  const handleCloseDialog = () => setOpen(false);
+
+  //Get the entire folder list # questions??? Cannot get sepecific type
+  const axiosFetchData = async () => {
+    ///useEffect replace useCallback?
+    await axios
+      .get(`http://localhost:5000/iterationfolder/${dataType}`, {
+        headers: {
+          email: "danni@hhsc.ca", // Replace with the appropriate email value
+        },
+      })
+      .then((res) => {
+        console.log(res.data);
+        const returnedData = res.data.data.output;
+        const convertedTreeData = returnedData.map((items) => ({
+          id: items.FolderID,
+          parent: items.ParentFolderID,
+          text: items.FolderName,
+          type: items.Type,
+          droppable: items.Droppable,
+        }));
+
+        console.log(convertedTreeData);
+        setTreeData(convertedTreeData);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  };
+
+  useEffect(() => {
+    axiosFetchData();
+  }, []);
+
   const handleDrop = async (newTree) => {
+    console.log(newTree);
+    console.log(treeData);
     let draggedNode = compareArray(newTree, treeData);
     console.log(draggedNode[0].id);
-    const { id, parent, text, email } = draggedNode[0];
-    console.log(id, parent, text, email);
+    const { id, parent } = draggedNode[0];
+    console.log(parent);
     await axios
-      .patch(
-        "http://localhost:5000/api/iteration/drag/" + id,
-        (id, parent, text, email)
-      )
+      .patch("http://localhost:5000/iterationfolder/drag/" + id, {ParentFolderID:parent}, {
+        headers: {
+          email: "danni@hhsc.ca", // Replace with the appropriate email value
+        },
+      })
       .then((res) => {
         console.log(res.data);
       })
       .catch((error) => {
         console.log(error);
       });
+    setTreeData(newTree);
   };
 
-  const [open, setOpen] = useState(false);
-  const handleOpenDialog = () => setOpen(true);
-  const handleCloseDialog = () => setOpen(false);
-
-  //Get the entire folder list
-  const axiosFetchData = useCallback(async () => {
-    await axios
-      .get("http://localhost:5000/api/iteration")
-      .then((res) => {
-        const returnedData = res.data.data.iteration;
-        const convertedTreeData = returnedData.map((items) => ({
-          id: items.FolderID,
-          parent: items.ParentFolderID,
-          text: items.FolderName,
-          droppable: items.droppable,
-        }));
-        setTreeData(convertedTreeData);
-      })
-      .catch((err) => {
-        console.log(err);
-      });
-  });
-
-  //Create a new folder
+  //Create a new folder #questions??? the id of each node, and the email
   const handleSubmit = async (newNode) => {
     console.log(newNode);
-    //#question: the newNode doesn't have id
     await axios
-      .post("http://localhost:5000/api/iteration", newNode)
+      .post("http://localhost:5000/iterationfolder", newNode, {
+        headers: {
+          email: "shawnw@hhsc.ca", // Replace with the appropriate email value
+        },
+      })
       .then((res) => {
         console.log(res.data);
+        setTreeData((prevTreeData) => [...prevTreeData, newNode]);
+        axiosFetchData()
       })
       .catch((err) => {
         console.log(err);
@@ -105,17 +126,25 @@ function App() {
     handleCloseDialog();
   };
 
-  //update the folder name
+  //update the folder name #questions??? error 404
   const handleTextChange = async (id, text) => {
+    console.log(text);
     axios
-      .patch("http://localhost:5000/api/iteration/" + id, { text })
+      .patch("http://localhost:5000/iterationfolder/" + id, {
+        FolderName: text,
+      })
       .then((res) => {
         console.log(res);
+        setTreeData((prevTreeData) =>
+          prevTreeData.map((node) =>
+            node.id === id ? { ...node, text } : node
+          )
+        );
       })
       .catch((err) => console.log(err));
   };
 
-  //Delete Folder and keep the sub-folders
+  //Delete Folder and keep the sub-folders #questions??? return Error 404
   const handleDelete = (id) => {
     /* const lastId = getLastId(treeData);
     const targetNode = treeData.find((node) => node.id === id);
@@ -142,21 +171,22 @@ function App() {
     const newTree = treeData.filter((node) => !deteledIds.includes(node.id));
     setTreeData([...newTree, ...partialTree]); */
     axios
-      .delete("http://localhost:5000/api/iteration/" + id)
+      .delete("http://localhost:5000/iterationfolder/" + id, {
+        headers: {
+          email: "danni@hhsc.ca", // Replace with the appropriate email value
+        },
+      })
       .then((res) => {
         console.log(res);
+        setTreeData((prevTreeData) =>
+          prevTreeData.filter((node) => node.id !== id)
+        );
       })
       .catch((err) => console.log(err));
   };
 
-  
-
-  useEffect(() => {
-    axiosFetchData();
-  }, []);
-
   return (
-    <div>
+    <div className="app">
       <DndProvider backend={MultiBackend} options={getBackendOptions()}>
         <Tree
           tree={treeData}

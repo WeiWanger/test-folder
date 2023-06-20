@@ -13,35 +13,41 @@ import {
 } from "@mui/material";
 import styles from "./AddDialog.module.css";
 
+function identifyFolderIdStartWith(folderID) {
+  if (folderID.match(/[^a-zA-z]/)) {
+    return true;
+  }
+  if (folderID.match(/[^0-9]/)) {
+    return false;
+  }
+}
+
 export const AddDialog = (props) => {
+ 
 
   const [text, setText] = useState("");
-  const [email, setEmail] = useState("");
+  // const [email, setEmail] = useState("");
   const [parent, setParent] = useState(0);
-  const [droppable, setDroppable] = useState(true);
+  // const [droppable, setDroppable] = useState(true);
 
   const handleChangeText = (e) => {
     console.log(e.target.value);
     setText(e.target.value);
   };
 
-  const handleChangeEmail = (e) => {
-    setEmail(e.target.value);
-  };
+  // const handleChangeEmail = (e) => {
+  //   setEmail(e.target.value);
+  // };
   const handleChangeParent = (e) => {
     setParent(e.target.value);
-    
   };
 
   const createdNewNode = {
-      FolderID: props.tree.id,
-      ParentFolderID: parent,
-      FolderName: text,
-      Email: email,
-      droppable: droppable,
-      Type: "public",
-  }
-
+    
+    ParentFolderID: parent,
+    FolderName: text,
+    Type: "official",
+  };
 
   return (
     <Dialog open={true} onClose={props.onClose}>
@@ -50,16 +56,16 @@ export const AddDialog = (props) => {
         <div className={styles.name_input}>
           <TextField label="Name" onChange={handleChangeText} value={text} />
         </div>
-        <div className={styles.name_input}>
+        {/* <div className={styles.name_input}>
           <TextField label="Email" onChange={handleChangeEmail} value={email} />
-        </div>
+        </div> */}
         <div>
           <FormControl className={styles.select}>
             <InputLabel>Parent</InputLabel>
             <Select label="Parent" onChange={handleChangeParent} value={parent}>
               <MenuItem value={"0"}>(root)</MenuItem>
               {props.tree
-                .filter((node) => node.droppable === true)
+                .filter((node) => identifyFolderIdStartWith(node.id) === true)
                 .map((node) => (
                   <MenuItem key={String(node.id)} value={String(node.id)}>
                     {node.text}
@@ -71,11 +77,7 @@ export const AddDialog = (props) => {
       </DialogContent>
       <DialogActions>
         <Button onClick={props.onClose}>Cancel</Button>
-        <Button
-          onClick={() => props.onSubmit(createdNewNode)}
-        >
-          Submit
-        </Button>
+        <Button onClick={() => props.onSubmit(createdNewNode)}>Submit</Button>
       </DialogActions>
     </Dialog>
   );

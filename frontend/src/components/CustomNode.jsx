@@ -12,8 +12,24 @@ import styles from "./CustomNode.module.css";
 import { ConfirmDialog } from "../confirmation/confirmDialog";
 import { useDragOver } from "@minoru/react-dnd-treeview";
 
+function identifyFolderIdStartWith(folderID) {
+  if (!folderID) {
+    // Check if folderID is defined and not an empty string
+    return null;
+  }
+
+  if (folderID[0].match(/[a-zA-z]/)) {
+    return true; // Starts with a letter
+  } else if (folderID[0].match(/[0-9]/)) {
+    return false; // Starts with a number
+  }
+
+  return null; // Starts with neither a letter nor a number
+}
+
 export const CustomNode = (props) => {
   const { id, droppable, text } = props.node;
+ 
 
   const [visibleInput, setVisibleInput] = useState(false);
   const [labelText, setLabelText] = useState(text);
@@ -64,18 +80,14 @@ export const CustomNode = (props) => {
           props.isOpen ? styles.isOpen : ""
         }`}
       >
-        {props.node.droppable && (
+        {identifyFolderIdStartWith(id) && (
           <div onClick={handleToggle}>
             <ArrowRightIcon />
           </div>
         )}
       </div>
       <div>
-        {props.node.droppable ? (
-          <FolderIcon droppable={droppable.toString()} />
-        ) : (
-          <DescriptionIcon droppable={droppable.toString()} />
-        )}
+        {identifyFolderIdStartWith(id) ? <FolderIcon /> : <DescriptionIcon />}
       </div>
       <div className={styles.labelGridItem}>
         {visibleInput ? (
@@ -101,7 +113,7 @@ export const CustomNode = (props) => {
             <Typography variant="body2" className={styles.folder_title}>
               {props.node.text}
             </Typography>
-            {props.node.droppable ? (
+            {identifyFolderIdStartWith(id) ? (
               <div className={styles.actionButton}>
                 <IconButton size="small" onClick={handleShowInput}>
                   <Update fontSize="small" />

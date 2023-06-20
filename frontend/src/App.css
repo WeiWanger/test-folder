@@ -8,3 +8,17 @@ body,
 #root {
   height: 100%;
 }
+
+.app {
+  height: 100%;
+}
+
+ul {
+  list-style: none;
+}
+
+.app > ul {
+  box-sizing: border-box;
+  height: 100%;
+  padding: 30px, 15px;
+}
