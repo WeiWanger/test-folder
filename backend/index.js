@@ -130,7 +130,7 @@ app.get("/iterationfolder/:type", async (req, res) => {
                   Iter.OfficialFlag === false &&
                   Iter.PublicFlag === false &&
                   Iter.OwnerEmail === Iter.AuthorEmail &&
-                  email === Iter.OwnerEmail
+                  email_login === Iter.OwnerEmail
                 ) {
                   sample = {
                     FolderID: files_read[j].ID.toString(),
@@ -176,7 +176,7 @@ app.get("/iterationfolder/:type", async (req, res) => {
                   Iter.OfficialFlag === false &&
                   Iter.PublicFlag === false &&
                   Iter.OwnerEmail != Iter.AuthorEmail &&
-                  (email === Iter.OwnerEmail || email === Iter.AuthorEmail)
+                  (email_login === Iter.OwnerEmail || email_login === Iter.AuthorEmail)
                 ) {
                   sample = {
                     FolderID: files_read[j].ID.toString(),
