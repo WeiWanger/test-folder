@@ -12,7 +12,7 @@ import styles from "./CustomNode.module.css";
 import { ConfirmDialog } from "../confirmation/confirmDialog";
 import { useDragOver } from "@minoru/react-dnd-treeview";
 
-function identifyFolderIdStartWith(folderID) {
+/* function identifyFolderIdStartWith(folderID) {
   if (!folderID) {
     // Check if folderID is defined and not an empty string
     return null;
@@ -25,11 +25,10 @@ function identifyFolderIdStartWith(folderID) {
   }
 
   return null; // Starts with neither a letter nor a number
-}
+} */
 
 export const CustomNode = (props) => {
   const { id, droppable, text } = props.node;
- 
 
   const [visibleInput, setVisibleInput] = useState(false);
   const [labelText, setLabelText] = useState(text);
@@ -68,27 +67,30 @@ export const CustomNode = (props) => {
     setConfirmShow(false);
   };
 
+  const handleSelect = () => props.onSelect(props.node);
+
   const dragOverProps = useDragOver(id, props.isOpen, props.onToggle);
   return (
     <div
-      className={`tree-node ${styles.root}`}
+      className={`tree-node ${styles.root} ${
+        props.isSelected ? styles.isSelected : ""
+      }`}
       style={{ paddingInlineStart: indent, width: "20%" }}
       {...dragOverProps}
+      onClick={handleSelect}
     >
       <div
         className={`${styles.expandIconWrapper} ${
           props.isOpen ? styles.isOpen : ""
         }`}
       >
-        {identifyFolderIdStartWith(id) && (
+        {props.node.droppable && (
           <div onClick={handleToggle}>
             <ArrowRightIcon />
           </div>
         )}
       </div>
-      <div>
-        {identifyFolderIdStartWith(id) ? <FolderIcon /> : <DescriptionIcon />}
-      </div>
+      <div>{props.node.droppable ? <FolderIcon /> : <DescriptionIcon />}</div>
       <div className={styles.labelGridItem}>
         {visibleInput ? (
           <div className={styles.inputWrapper}>
@@ -113,7 +115,7 @@ export const CustomNode = (props) => {
             <Typography variant="body2" className={styles.folder_title}>
               {props.node.text}
             </Typography>
-            {identifyFolderIdStartWith(id) ? (
+            {props.node.droppable ? (
               <div className={styles.actionButton}>
                 <IconButton size="small" onClick={handleShowInput}>
                   <Update fontSize="small" />

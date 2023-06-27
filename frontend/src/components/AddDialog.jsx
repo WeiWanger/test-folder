@@ -14,6 +14,7 @@ import {
 import styles from "./AddDialog.module.css";
 
 function identifyFolderIdStartWith(folderID) {
+  if (!folderID) return false;
   if (folderID.match(/[^a-zA-z]/)) {
     return true;
   }
@@ -23,8 +24,6 @@ function identifyFolderIdStartWith(folderID) {
 }
 
 export const AddDialog = (props) => {
- 
-
   const [text, setText] = useState("");
   // const [email, setEmail] = useState("");
   const [parent, setParent] = useState(0);
@@ -43,10 +42,9 @@ export const AddDialog = (props) => {
   };
 
   const createdNewNode = {
-    
     ParentFolderID: parent,
     FolderName: text,
-    Type: "official",
+    Type: props.dataType || "",
   };
 
   return (

@@ -10,7 +10,11 @@ body,
 }
 
 .app {
+  display: flex;
+  flex-direction: column;
   height: 100%;
+  overflow: auto;
+  margin: "10px 10px 0px 20px",
 }
 
 ul {
@@ -18,7 +22,24 @@ ul {
 }
 
 .app > ul {
+  margin: 10px 20px;
+  box-sizing: border-box;
+  height: 40%;
+  width: auto;
+  padding: 3vh 1.5vw;
+  overflow-y: auto;
+}
+
+.treeRoot {
   box-sizing: border-box;
   height: 100%;
-  padding: 30px, 15px;
+  padding: 96px 32px 32px;
+}
+
+.draggingSource {
+  opacity: 0.3;
+}
+
+.dropTarget {
+  background-color: #e8f0fe;
 }

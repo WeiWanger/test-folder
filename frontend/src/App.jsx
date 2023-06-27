@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Button from "@mui/material/Button";
 import AddIcon from "@mui/icons-material/Add";
 import { DndProvider } from "react-dnd";
@@ -6,12 +6,16 @@ import {
   Tree,
   MultiBackend,
   getBackendOptions,
+  isAncestor,
 } from "@minoru/react-dnd-treeview";
 import { CustomNode } from "./components/CustomNode";
 import { AddDialog } from "./components/AddDialog";
+import { DragLayer } from "./externalnode/DragLayer";
 import "./App.css";
-// import TreeData from "./data";
+import externalNode from "./externalnode/external_node.json";
+import ExternalNode from "./externalnode/ExternalNode";
 import axios from "axios";
+import { Paper, Typography, Box, TextField } from "@mui/material";
 
 /* const getLastId = (treeData) => {
   const reverseArray = [...treeData].sort((a, b) => {
@@ -48,8 +52,15 @@ function App({ dataType }) {
   const [treeData, setTreeData] = useState([]);
 
   const [open, setOpen] = useState(false);
+
   const handleOpenDialog = () => setOpen(true);
   const handleCloseDialog = () => setOpen(false);
+
+  //opean all folders
+  const [isOpenAll, setIsOpenAll] = useState(false);
+  const ref = useRef(null);
+  const handleOpenAll = () => ref.current?.openAll();
+  const handleCloseAll = () => ref.current?.closeAll();
 
   //Get the entire folder list # questions??? Cannot get sepecific type
   const axiosFetchData = async () => {
@@ -83,19 +94,25 @@ function App({ dataType }) {
     axiosFetchData();
   }, []);
 
-  const handleDrop = async (newTree) => {
+  //drag and drop funcitonality
+  const handleDrop = async (newTree, options) => {
     console.log(newTree);
-    console.log(treeData);
+    const { dragSourceId } = options;
+
     let draggedNode = compareArray(newTree, treeData);
     console.log(draggedNode[0].id);
     const { id, parent } = draggedNode[0];
     console.log(parent);
     await axios
-      .patch("http://localhost:5000/iterationfolder/drag/" + id, {ParentFolderID:parent}, {
-        headers: {
-          email: "danni@hhsc.ca", // Replace with the appropriate email value
-        },
-      })
+      .patch(
+        "http://localhost:5000/iterationfolder/drag/" + id,
+        { ParentFolderID: parent },
+        {
+          headers: {
+            email: "danni@hhsc.ca", // Replace with the appropriate email value
+          },
+        }
+      )
       .then((res) => {
         console.log(res.data);
       })
@@ -103,21 +120,25 @@ function App({ dataType }) {
         console.log(error);
       });
     setTreeData(newTree);
+    setExternalNodes(
+      externalNodes.filter((exnode) => exnode.id !== dragSourceId)
+    );
   };
 
   //Create a new folder #questions??? the id of each node, and the email
   const handleSubmit = async (newNode) => {
+    console.log("newnode");
     console.log(newNode);
     await axios
       .post("http://localhost:5000/iterationfolder", newNode, {
         headers: {
-          email: "shawnw@hhsc.ca", // Replace with the appropriate email value
+          email: "danni@hhsc.ca", // Replace with the appropriate email value
         },
       })
       .then((res) => {
         console.log(res.data);
         setTreeData((prevTreeData) => [...prevTreeData, newNode]);
-        axiosFetchData()
+        axiosFetchData();
       })
       .catch((err) => {
         console.log(err);
@@ -185,17 +206,172 @@ function App({ dataType }) {
       .catch((err) => console.log(err));
   };
 
+  // Multiple drag
+  /* const [selectedNodes, setSelectedNodes] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isCtrlPressing, setIsCtrlPressing] = useState(false);
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key.toLowerCase() === "escape") {
+        setSelectedNodes([]);
+      } else if (e.ctrlKey || e.metaKey) {
+        setIsCtrlPressing(true);
+      }
+    };
+
+    const handleKeyUp = (e) => {
+      if (e.key.toLowerCase() === "control" || e.key.toLowerCase() === "meta") {
+        setIsCtrlPressing(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+    };
+  }, []); */
+
+  //single node selection
+  const handleSingleSelect = (node) => {
+    setSelectedNodes(node);
+  };
+
+  //Multi node selection
+  const handleMultiSelect = (clickedNode) => {
+    const selectIds = selectedNodes.map((node) => node.id);
+
+    //ignore if the clicked node is already selected
+    if (selectIds.includes(clickedNode.id)) {
+      return;
+    }
+    //ignore if ancestor node is alredy selected
+    if (
+      selectIds.some((selectedId) =>
+        isAncestor(treeData, selectedId, clickedNode.id)
+      )
+    ) {
+      return;
+    }
+
+    let updateNodes = [...selectedNodes];
+
+    //if descendant nodes already selected , rmove them
+    updateNodes = updateNodes.filter((selectedNode) => {
+      return !isAncestor(treeData, clickedNode.id, selectedNode.id);
+    });
+    updateNodes = [...updateNodes, clickedNode];
+    setSelectedNodes(updateNodes);
+  };
+
+  const handleClick = (e, node) => {
+    if (e.ctrlKey || e.metaKey) {
+      handleMultiSelect(node);
+    } else {
+      handleSingleSelect(node);
+    }
+  };
+
+  const handleDragStart = (node) => {
+    const isSelectedNode = selectedNodes.some((n) => n.id === node.id);
+    setIsDragging(true);
+
+    if (!isCtrlPressing && isSelectedNode) {
+      return;
+    }
+    if (!isCtrlPressing) {
+      setSelectedNodes([node]);
+      return;
+    }
+
+    if (!selectedNodes.some((n) => n.id === node.id)) {
+      setSelectedNodes([...selectedNodes, node]);
+    }
+  };
+
+  const handleDragEnd = () => {
+    setIsDragging(false);
+    setIsCtrlPressing(false);
+    setSelectedNodes([]);
+  };
+
+  //External node
+  const [externalNodes, setExternalNodes] = useState(externalNode);
+  const [lastId, setlastId] = useState(105);
+
+  const handleAddExternalNode = () => {
+    const node = {
+      id: lastId,
+      parent: 0,
+      text: `External node${lastId - 100}`,
+    };
+    setExternalNodes([...externalNodes, node]);
+    setlastId(lastId + 1);
+  };
+
+  //Search Bar
+  const [query, setQuery] = useState("");
+
   return (
     <div className="app">
       <DndProvider backend={MultiBackend} options={getBackendOptions()}>
+        <Box
+          sx={{
+            margin: "10px 20px",
+            display: "flex",
+            justifyContent: "flex-start",
+          }}
+        >
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={handleOpenAll}
+            sx={{ margin: "0 10px" }}
+          >
+            Open All
+          </Button>
+          <Button variant="outlined" size="small" onClick={handleCloseAll}>
+            Close All
+          </Button>
+
+          {/* Add functionality: addDialog componenet */}
+          <Box sx={{ display: "flex", justifyContent: "stretch" }}>
+            <Box>
+              <Button
+                onClick={handleOpenDialog}
+                startIcon={<AddIcon />}
+                variant="contained"
+                sx={{ marginLeft: "20px" }}
+                size="small"
+              >
+                Add Folder
+              </Button>
+              {open && (
+                <AddDialog
+                  tree={treeData}
+                  onClose={handleCloseDialog}
+                  onSubmit={handleSubmit}
+                  dataType={dataType}
+                />
+              )}
+            </Box>
+          </Box>
+        </Box>
+        <DragLayer />
         <Tree
+          ref={ref}
           tree={treeData}
           rootId={"0"}
+          extraAcceptTypes={["EXTERNAL_NODE"]}
           render={(node, { depth, isOpen, onToggle }) => (
             <CustomNode
               node={node}
               depth={depth}
               isOpen={isOpen}
+              isSelected={node.id === selectedNodes?.id}
+              onSelect={handleSingleSelect}
               onToggle={onToggle}
               onDelete={handleDelete}
               onTextChange={handleTextChange}
@@ -206,25 +382,29 @@ function App({ dataType }) {
           )}
           onDrop={handleDrop}
         />
-        <div>
-          <div>
-            <Button
-              onClick={handleOpenDialog}
-              startIcon={<AddIcon />}
-              varaint="contained"
-              sx={{ marginLeft: "20px" }}
-            >
-              Add Folder
-            </Button>
-            {open && (
-              <AddDialog
-                tree={treeData}
-                onClose={handleCloseDialog}
-                onSubmit={handleSubmit}
-              />
-            )}
-          </div>
-        </div>
+        <Box
+          sx={{
+            margin: "10px 20px",
+            height: "200px",
+            width: "auto",
+            overflowY: "auto",
+          }}
+        >
+          <Box sx={{ padding: "15px" }}>
+            <TextField
+              id="standard-basic"
+              label="Search"
+              variant="standard"
+              onChange={(e) => setQuery(e.target.value)}
+            />
+
+            {externalNode
+              .filter((node) => node.text.toLocaleLowerCase().includes(query))
+              .map((node) => (
+                <ExternalNode key={node.id} node={node} />
+              ))}
+          </Box>
+        </Box>
       </DndProvider>
     </div>
   );

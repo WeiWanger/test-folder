@@ -96,7 +96,9 @@ const dragFile = async (id, parent, email, type) => {
   let flag = 0;
   let data = await pool.request().query("SELECT * from RelationTable_test");
   let Iters = data.recordset;
-  let check = false;
+  let check = 0;
+  let recordFolder = "";
+  let recordEmail = "";
   let temp;
   let typeCheck = "official";
 
@@ -118,19 +120,25 @@ const dragFile = async (id, parent, email, type) => {
         id * 1
       } and Email = '${email}'`
     );
-    console.log(similarIters.recordsets[0]);
-      // return -12;
+  console.log(similarIters.recordsets[0]);
+  // return -12;
   for (let j = 0; j < similarIters.recordsets[0].length; j++) {
     //complare the type of the iteration and the existing iteration that share the same ID and email
     temp = await pool
       .request()
-      .query(`SELECT Type from FolderTable_test WHERE FolderID = '${similarIters.recordsets[0][j].FolderID}'`);
+      .query(
+        `SELECT Type from FolderTable_test WHERE FolderID = '${similarIters.recordsets[0][j].FolderID}'`
+      );
 
     typeCheck = temp.recordset[0].Type;
-     console.log(type);
-     console.log(typeCheck);
+    console.log(type);
+    console.log(typeCheck);
 
-    check = Boolean(type === typeCheck);//true: same type exists, not allowed; false: allowed
+    if (type === typeCheck) {
+      check++;
+      recordFolder = temp.recordset[0].FolderID;
+      recordEmail = temp.recordset[0].Email;
+    }
   }
   if (!check) {
     // console.log('ooooo');
@@ -145,10 +153,10 @@ const dragFile = async (id, parent, email, type) => {
     let result = await pool.request().query(
       `UPDATE RelationTable_test SET FolderID = '${parent}' WHERE ID = ${
         id * 1
-      } AND Email = '${email}'
+      } AND Email = '${recordEmail}' AND FolderID = '${recordFolder}'
           UPDATE RelationTable_test SET Email = '${email}' WHERE ID = ${
         id * 1
-      } AND Email = '${email}'`
+      } AND Email = '${recordEmail}' AND FolderID = '${recordFolder}'`
     );
   }
 };
