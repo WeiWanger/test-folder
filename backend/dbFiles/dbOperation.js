@@ -141,20 +141,19 @@ const dragFile = async (id, parent, email, type) => {
     }
   }
   if (!check) {
-    // console.log('ooooo');
-    //no such file in any folder before, so create a new row
     let iterations = pool.request().query(
       `insert into RelationTable_test values
-              ('${id * 1}','${parent}','${email}')`
+              ('${id * 1}','${parent}','${email}','${type}')`
     );
   } else {
-    // console.log('IIIII');
-    //the file is already in a folder, so update the old row
     let result = await pool.request().query(
       `UPDATE RelationTable_test SET FolderID = '${parent}' WHERE ID = ${
         id * 1
       } AND Email = '${recordEmail}' AND FolderID = '${recordFolder}'
           UPDATE RelationTable_test SET Email = '${email}' WHERE ID = ${
+        id * 1
+      } AND Email = '${recordEmail}' AND FolderID = '${recordFolder}'
+      UPDATE RelationTable_test SET Type = '${type}' WHERE ID = ${
         id * 1
       } AND Email = '${recordEmail}' AND FolderID = '${recordFolder}'`
     );

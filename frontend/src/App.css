@@ -14,7 +14,7 @@ body,
   flex-direction: column;
   height: 100%;
   overflow: auto;
-  margin: "10px 10px 0px 20px",
+  margin: "10px 10px 0px 20px";
 }
 
 ul {
@@ -24,7 +24,7 @@ ul {
 .app > ul {
   margin: 10px 20px;
   box-sizing: border-box;
-  height: 40%;
+  height: 100%;
   width: auto;
   padding: 3vh 1.5vw;
   overflow-y: auto;

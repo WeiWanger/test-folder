@@ -57,6 +57,7 @@ export default function IterationTabs() {
               sx={{
                 width: "50%",
                 height: "90vh",
+                borderLeft: "1px solid #D3D3D3",
               }}
             ></Box>
           </Box>
@@ -70,6 +71,7 @@ export default function IterationTabs() {
               sx={{
                 width: "50%",
                 height: "90vh",
+                borderLeft: "1px solid #D3D3D3",
               }}
             ></Box>
           </Box>
@@ -83,6 +85,7 @@ export default function IterationTabs() {
               sx={{
                 width: "50%",
                 height: "90vh",
+                borderLeft: "1px solid #D3D3D3",
               }}
             ></Box>
           </Box>
@@ -96,7 +99,7 @@ export default function IterationTabs() {
               sx={{
                 width: "50%",
                 height: "90vh",
-                // borderLeft: "1px solid #D3D3D3",
+                borderLeft: "1px solid #D3D3D3",
               }}
             ></Box>
           </Box>

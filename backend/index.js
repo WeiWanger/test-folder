@@ -1,6 +1,6 @@
 const express = require("express");
 const dbOperation = require("./dbFiles/dbOperation");
-const Folder = require("./dbFiles/folder");
+
 const cors = require("cors");
 
 const API_PORT = 5000;
@@ -28,8 +28,24 @@ app.get("/iterationfolder/all", (req, res) => {
 });
 ////////////////////////////////////////////////////
 //GET SPECIFIC TYPE//
+//GET ALL Folders//
+app.get("/iterationfolder/all", (req, res) => {
+  dbOperation.getfolders().then((folders_read) => {
+    res.status(200).json({
+      status: "success",
+      results: folders_read.length,
+      data: {
+        Iterations: folders_read,
+      },
+    });
+  });
+});
+////////////////////////////////////////////////////
+//GET SPECIFIC TYPE//
+//GET SPECIFIC TYPE//
 app.get("/iterationfolder/:type", async (req, res) => {
   let type = req.params.type;
+  const { input } = req.query;
   let email_login = req.header("email");
 
   if (
@@ -45,9 +61,9 @@ app.get("/iterationfolder/:type", async (req, res) => {
     let Iters_read = await dbOperation.getIterations();
     let Iter = Iters_read[0]; //to reduce the space complexity
     let sample = {
-      FolderID: "",
+      ID: "",
       ParentFolderID: "",
-      FolderName: "",
+      Name: "",
       Email: "",
       Type: "",
       Droppable: false,
@@ -60,19 +76,15 @@ app.get("/iterationfolder/:type", async (req, res) => {
           folders_read[i].Email === email_login
         ) {
           sample = {
-            FolderID: folders_read[i].FolderID,
+            ID: folders_read[i].FolderID,
             ParentFolderID: folders_read[i].ParentFolderID,
-            FolderName: folders_read[i].FolderName,
+            Name: folders_read[i].FolderName,
             Email: folders_read[i].Email,
             Type: type,
             Droppable: true,
           };
           folders.push(sample);
           for (let j = 0; j < files_read.length; j++) {
-            // if(j === 9){
-            //   console.log('Here is:');
-            //   console.log( files_read[j]);
-            // }
             if (folders_read[i].FolderID === files_read[j].FolderID) {
               Iter = Iters_read.find((el) => el.ID === files_read[j].ID);
 
@@ -84,29 +96,19 @@ app.get("/iterationfolder/:type", async (req, res) => {
                   type === "public")
               ) {
                 sample = {
-                  FolderID: files_read[j].ID.toString(),
+                  ID: files_read[j].ID.toString(),
                   ParentFolderID: files_read[j].FolderID,
-                  FolderName: "",
+                  Name: Iter.IterationName,
                   Email: files_read[j].Email,
                   Type: type,
                   Droppable: false,
                 };
                 files.push(sample);
-              } /*else {
-                let update = dbOperation.deleteFile(files_read[j].ID,files_read[j].Email);
-              }*/
+              }
             }
           }
         }
       }
-      let output = [...folders, ...files];
-      
-      res.status(200).json({
-        status: "success",
-        data: {
-          output,
-        },
-      });
     } else {
       if (type === "personal") {
         for (let i = 0; i < folders_read.length; i++) {
@@ -115,9 +117,9 @@ app.get("/iterationfolder/:type", async (req, res) => {
             folders_read[i].Email === email_login
           ) {
             sample = {
-              FolderID: folders_read[i].FolderID,
+              ID: folders_read[i].FolderID,
               ParentFolderID: folders_read[i].ParentFolderID,
-              FolderName: folders_read[i].FolderName,
+              Name: folders_read[i].FolderName,
               Email: folders_read[i].Email,
               Type: type,
               Droppable: true,
@@ -133,9 +135,9 @@ app.get("/iterationfolder/:type", async (req, res) => {
                   email_login === Iter.OwnerEmail
                 ) {
                   sample = {
-                    FolderID: files_read[j].ID.toString(),
+                    ID: files_read[j].ID.toString(),
                     ParentFolderID: files_read[j].FolderID,
-                    FolderName: "",
+                    Name: Iter.IterationName,
                     Email: folders_read[i].Email,
                     Type: type,
                     Droppable: false,
@@ -146,14 +148,6 @@ app.get("/iterationfolder/:type", async (req, res) => {
             }
           }
         }
-        let output = [...folders, ...files];
-        // console.log(output);
-        res.status(200).json({
-          status: "success",
-          data: {
-            output,
-          },
-        });
       } else {
         for (let i = 0; i < folders_read.length; i++) {
           if (
@@ -161,9 +155,9 @@ app.get("/iterationfolder/:type", async (req, res) => {
             folders_read[i].Email === email_login
           ) {
             sample = {
-              FolderID: folders_read[i].FolderID,
+              ID: folders_read[i].FolderID,
               ParentFolderID: folders_read[i].ParentFolderID,
-              FolderName: folders_read[i].FolderName,
+              Name: folders_read[i].FolderName,
               Email: folders_read[i].Email,
               Type: type,
               Droppable: true,
@@ -176,12 +170,13 @@ app.get("/iterationfolder/:type", async (req, res) => {
                   Iter.OfficialFlag === false &&
                   Iter.PublicFlag === false &&
                   Iter.OwnerEmail != Iter.AuthorEmail &&
-                  (email_login === Iter.OwnerEmail || email_login === Iter.AuthorEmail)
+                  (email_login === Iter.OwnerEmail ||
+                    email_login === Iter.AuthorEmail)
                 ) {
                   sample = {
-                    FolderID: files_read[j].ID.toString(),
+                    ID: files_read[j].ID.toString(),
                     ParentFolderID: files_read[j].FolderID,
-                    FolderName: "",
+                    Name: IterationName,
                     Email: folders_read[i].Email,
                     Type: type,
                     Droppable: false,
@@ -192,16 +187,205 @@ app.get("/iterationfolder/:type", async (req, res) => {
             }
           }
         }
-        let output = [...folders, ...files];
-        // console.log(output);
-        res.status(200).json({
-          status: "success",
-          data: {
-            output,
-          },
-        });
       }
     }
+    let RootFiles = [];
+    for (let i = 0; i < Iters_read.length; i++) {
+      if (
+        (type === "official" && Iters_read[i].OfficialFlag === true) ||
+        (type === "public" &&
+          Iters_read[i].OfficialFlag === false &&
+          Iters_read[i].PublicFlag === true) ||
+        (type === "shared" &&
+          Iters_read[i].Official === false &&
+          Iters_read[i].PublicFlag === false &&
+          Iters_read[i].AuthorEmail != Iters_read[i].OwnerEmail &&
+          Iters_read[i].AuthorEmail === email_login &&
+          Iters_read[i].OwnerEmail) ||
+        (type === "personal" &&
+          Iters_read[i].Official === false &&
+          Iters_read[i].PublicFlag === false &&
+          Iters_read[i].AuthorEmail != Iters_read[i].OwnerEmail &&
+          Iters_read[i].AuthorEmail === email_login)
+      ) {
+        sample = {
+          ID: Iters_read[i].ID.toString(),
+          ParentFolderID: "0",
+          Name: Iters_read[i].IterationName,
+          Email: folders_read[i].Email,
+          Type: type,
+          Droppable: false,
+        };
+        RootFiles.push(sample);
+      }
+    }
+    // console.log(RootFiles);
+    for (let i = 0; i < files_read.length; i++) {
+      for (let j = 0; j < RootFiles.length; j++) {
+        // if(files_read[i].ID === (RootFiles[j].ID*1)){
+        //     console.log(files_read[i].ID);
+        //     console.log(files_read[i].Email);
+        //     console.log(email_login);
+        //     console.log(files_read[i].Type);
+        //     console.log(type);
+        // }
+        if (
+          files_read[i].ID === RootFiles[j].ID * 1 &&
+          files_read[i].Email === email_login &&
+          files_read[i].Type === type
+        ) {
+          RootFiles = RootFiles.filter((item) => item.ID !== RootFiles[j].ID);
+        }
+      }
+    }
+
+    let output = [...folders, ...files, ...RootFiles];
+    let length = output.length;
+    if (input) {
+      for (let i = 0; i < length; i++) {
+        output[i].Name = output[i].Name.toLowerCase();
+      }
+      output = output.filter((item) => item.Name.includes(input.toLowerCase()));
+      let SearchOutput = output;
+      function ScanUp(id) {
+        let check = false;
+        if (isNaN(id)) {
+          let object = folders_read.find((el) => el.FolderID === id);
+          if (object.ParentFolderID === "0") {
+            return;
+          } else {
+            let folder_upper = folders_read.find(
+              (el) => el.FolderID === object.ParentFolderID
+            );
+            sample = {
+              ID: folder_upper.FolderID,
+              ParentFolderID: folder_upper.ParentFolderID,
+              Name: folder_upper.FolderName,
+              Email: email_login,
+              Type: type,
+              Droppable: true,
+            };
+            SearchOutput.push(sample);
+            ScanUp(folder_upper.FolderID);
+            check = true;
+          }
+        } else {
+          let object = files_read.find((el) => el.ID === id * 1);
+          if (object) {
+            let folder_upper = folders_read.find(
+              (el) => el.FolderID === object.FolderID
+            );
+            sample = {
+              ID: folder_upper.FolderID,
+              ParentFolderID: folder_upper.ParentFolderID,
+              Name: folder_upper.FolderName,
+              Email: email_login,
+              Type: type,
+              Droppable: true,
+            };
+            SearchOutput.push(sample);
+            ScanUp(folder_upper.FolderID);
+            check = true;
+          }
+        }
+        if (!check) {
+          return;
+        }
+      }
+
+      function ScanDown(id) {
+        if (isNaN(id)) {
+          let folders_under = folders_read.find(
+            (el) => el.ParentFolderID === id
+          );
+          let files_under = files_read.find((el) => el.FolderID === id);
+          if (folders_under) {
+            if (typeof folders_under === "object") {
+              sample = {
+                ID: folders_under.FolderID,
+                ParentFolderID: folders_under.ParentFolderID,
+                Name: folders_under.FodlerName,
+                Email: email_login,
+                Type: type,
+                Droppable: true,
+              };
+              SearchOutput.push(sample);
+              ScanDown(folders_under.FolderID);
+            } else {
+              for (let b = 0; b < folders_under.length; b++) {
+                sample = {
+                  ID: folders_under[b].FolderID,
+                  ParentFolderID: folders_under[b].ParentFolderID,
+                  Name: folders_under[b].FodlerName,
+                  Email: email_login,
+                  Type: type,
+                  Droppable: true,
+                };
+                SearchOutput.push(sample);
+                ScanDown(folders_under[b].FolderID);
+              }
+            }
+          }
+
+          if (files_under) {
+            if (typeof files_under === "object") {
+              let Iter = Iters_read.find((el) => el.ID === files_under.ID);
+              sample = {
+                ID: Iter.ID.toString(),
+                ParentFolderID: files_under.FolderID,
+                Name: Iter.IterationName,
+                Email: email_login,
+                Type: type,
+                Droppable: false,
+              };
+              SearchOutput.push(sample);
+            } else {
+              for (let b = 0; b < folders_under.length; b++) {
+                let Iter = Iters_read.find((el) => el === files_under[b].ID);
+                sample = {
+                  ID: Iter.ID.toString(),
+                  ParentFolderID: files_under[b].FolderID,
+                  Name: Iter.IterationName,
+                  Email: email_login,
+                  Type: type,
+                  Droppable: false,
+                };
+                SearchOutput.push(sample);
+              }
+            }
+          }
+        } else {
+          return;
+        }
+      }
+      length = output.length;
+      for (let i = 0; i < length; i++) {
+        ScanUp(output[i].ID);
+        console.log(i);
+        console.log(SearchOutput);
+        ScanDown(output[i].ID);
+      }
+      for (let m = 0; m < SearchOutput.length; m++) {
+        for (let n = 0; n < SearchOutput.length; n++) {
+          if (m != n && SearchOutput[m].ID === SearchOutput[n].ID) {
+            SearchOutput.splice(n, 1);
+          }
+        }
+      }
+      //   res.status(200).json({
+      //     status: "success",
+      //     data: {
+      //       SearchOutput,
+      //     },
+      //   });
+      output = SearchOutput;
+    }
+    res.status(200).json({
+      status: "success",
+      data: {
+        output,
+      },
+    });
   } else {
     res.status(404).json({
       status: "fail",
@@ -234,12 +418,12 @@ app.get("/iterationfolder/:id", (req, res) => {
   });
 });
 /////////////////////////////////////////////////////
+
 //CREATE//
 app.post("/iterationfolder", (req, res) => {
   const email_login = req.header("email");
   let newFolder = req.body;
   newFolder["Email"] = email_login;
-
   if (newFolder.ParentFolderID === 0) {
     newFolder.ParentFolderID = "0";
   }
@@ -256,8 +440,16 @@ app.post("/iterationfolder", (req, res) => {
         message: "Invalid parent folder ID.",
       });
     }
+    console.log(newFolder);
+    if (folders_read.find((el) => el.FolderName === newFolder.FolderName)) {
+      return res.status(404).json({
+        status: "fail",
+        message:
+          "Invalid input: Destination contains a folder with the same name.",
+      });
+    }
 
-    dbOperation.createfolder(newFolder).then((newID) => {
+    dbOperation.createfolder(newFolder).then((newID, feedback) => {
       res.status(201).json({
         status: "success",
         message: `Folder created with new ID of '${newID}'`,
@@ -302,104 +494,121 @@ app.patch("/iterationfolder/:id", (req, res) => {
   });
 });
 /////////////////////////////////////////////////////////
+
 //DRAG & DROP//
 app.patch("/iterationfolder/drag/:id", (req, res) => {
   const id = req.params.id;
   let email_login = req.header("email");
-  console.log("id: ");
-  console.log(id);
-  console.log("email: ");
-  console.log(email_login);
-  console.log("parent: ");
-  console.log(req.body.ParentFolderID);
+  // console.log("id: ");
+  // console.log(id);
+  // console.log("email: ");
+  // console.log(email_login);
+  // console.log("parent: ");
+  // console.log(req.body.ParentFolderID);
   //drag folder
   dbOperation.getfolders().then((folders_read) => {
     const folder = folders_read.find(
       (el) => el.FolderID === req.body.ParentFolderID
     );
-    if (!folder) {
-      //if the Iteration is not found
-      return res.status(404).json({
-        status: "fail",
-        message: "Invalid folder ID.",
+
+    if (isNaN(id)) {
+      if (!folder) {
+        //if the Iteration is not found
+        return res.status(404).json({
+          status: "fail",
+          message: "Invalid folder ID.",
+        });
+      }
+      dbOperation.getfolders().then((folders_read) => {
+        const folder = folders_read.find((el) => el.FolderID === id);
+
+        if (!folder || id === req.body.ParentFolderID) {
+          //if the folder is not found
+          return res.status(404).json({
+            status: "fail",
+            message: "Invalid folder ID.",
+          });
+        }
+
+        dbOperation
+          .dragFolder(id, req.body.ParentFolderID, email_login)
+          .then((feedback) => {
+            if (feedback === -1) {
+              res.status(404).json({
+                status: "fail",
+                message: "Invalid Operation: inconsistent type.",
+              });
+            } else {
+              res.status(200).json({
+                status: "success",
+                message: "Drag Performed!",
+              });
+            }
+          });
       });
     } else {
-      if (isNaN(id)) {
-        dbOperation.getfolders().then((folders_read) => {
-          const folder = folders_read.find((el) => el.FolderID === id);
-
-          if (!folder || id === req.body.ParentFolderID) {
-            //if the folder is not found
-            return res.status(404).json({
-              status: "fail",
-              message: "Invalid folder ID.",
-            });
-          }
-
-          dbOperation
-            .dragFolder(id, req.body.ParentFolderID, email_login)
-            .then((feedback) => {
-              if (feedback === -1) {
-                res.status(404).json({
-                  status: "fail",
-                  message: "Invalid Operation: inconsistent type.",
-                });
-              } else {
-                res.status(200).json({
-                  status: "success",
-                  message: "Drag Performed!",
-                });
-              }
-            });
+      //drag file
+      if (req.body.ParentFolderID === "0") {
+        dbOperation.deleteFile(id, email_login).then(() => {
+          return res.status(200).json({
+            status: "success",
+            message: "Iteraion removed from folder!",
+          });
         });
       } else {
-        //drag file
-        dbOperation.getIterations().then((Iters_read) => {
-          const Iter = Iters_read.find((el) => el.ID === id * 1);
-          if (!Iter) {
-            //if the Iteration is not found
-            return res.status(404).json({
-              status: "fail",
-              message: "Invalid iteration ID.",
-            });
-          }
-
-          //Determine the type of the iteration
-          let type = "official";
-          if (!Iter.OfficialFlag) {
-            type = "public";
-            if (!Iter.PublicFlag) {
-              if (Iter.AuthorEmail === Iter.OwnerEmail) {
-                type = "personal";
-              } else {
-                type = "shared";
-              }
+        if (!folder) {
+          //if the Iteration is not found
+          return res.status(404).json({
+            status: "fail",
+            message: "Invalid folder ID.",
+          });
+        } else {
+          dbOperation.getIterations().then((Iters_read) => {
+            const Iter = Iters_read.find((el) => el.ID === id * 1);
+            if (!Iter) {
+              //if the Iteration is not found
+              return res.status(404).json({
+                status: "fail",
+                message: "Invalid iteration ID.",
+              });
             }
-          }
 
-          dbOperation
-            .dragFile(id, req.body.ParentFolderID, email_login, type)
-            .then((feedback) => {
-              if (feedback === -1) {
-                res.status(404).json({
-                  status: "fail",
-                  message: "Invalid Operation: inconsistent type.",
-                });
-              } else {
-                if (feedback === -2) {
-                  res.status(404).json({
-                    status: "fail",
-                    message: "Invalid Operation: inconsistent users.",
-                  });
+            //Determine the type of the iteration
+            let type = "official";
+            if (!Iter.OfficialFlag) {
+              type = "public";
+              if (!Iter.PublicFlag) {
+                if (Iter.AuthorEmail === Iter.OwnerEmail) {
+                  type = "personal";
                 } else {
-                  res.status(200).json({
-                    status: "success",
-                    message: `Drag Performed! Iteration type: ${type}`,
-                  });
+                  type = "shared";
                 }
               }
-            });
-        });
+            }
+            dbOperation
+              .dragFile(id, req.body.ParentFolderID, email_login, type)
+              .then((feedback) => {
+                if (feedback === -1) {
+                  res.status(404).json({
+                    status: "fail",
+                    message: "Invalid Operation: inconsistent type.",
+                  });
+                } else {
+                  if (feedback === -2) {
+                    res.status(404).json({
+                      status: "fail",
+                      message: "Invalid Operation: inconsistent users.",
+                    });
+                  } else {
+                    res.status(200).json({
+                      status: "success",
+                      message: `Drag Performed! Iteration type: ${type}`,
+                    });
+                  }
+                }
+              });
+          });
+        }
       }
     }
   });

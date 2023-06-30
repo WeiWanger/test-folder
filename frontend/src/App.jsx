@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from "react";
-import Button from "@mui/material/Button";
 import AddIcon from "@mui/icons-material/Add";
 import { DndProvider } from "react-dnd";
 import {
@@ -10,12 +9,17 @@ import {
 } from "@minoru/react-dnd-treeview";
 import { CustomNode } from "./components/CustomNode";
 import { AddDialog } from "./components/AddDialog";
-import { DragLayer } from "./externalnode/DragLayer";
 import "./App.css";
-import externalNode from "./externalnode/external_node.json";
-import ExternalNode from "./externalnode/ExternalNode";
 import axios from "axios";
-import { Paper, Typography, Box, TextField } from "@mui/material";
+import {
+  Snackbar,
+  Box,
+  TextField,
+  Button,
+  InputAdornment,
+} from "@mui/material";
+import ClearIcon from "@mui/icons-material/Clear";
+import Alert from "@mui/material/Alert";
 
 /* const getLastId = (treeData) => {
   const reverseArray = [...treeData].sort((a, b) => {
@@ -56,6 +60,8 @@ function App({ dataType }) {
   const handleOpenDialog = () => setOpen(true);
   const handleCloseDialog = () => setOpen(false);
 
+  const [errorMessage, setErrorMessage] = useState(null);
+
   //opean all folders
   const [isOpenAll, setIsOpenAll] = useState(false);
   const ref = useRef(null);
@@ -63,10 +69,10 @@ function App({ dataType }) {
   const handleCloseAll = () => ref.current?.closeAll();
 
   //Get the entire folder list # questions??? Cannot get sepecific type
+  const [query, setQuery] = useState("");
   const axiosFetchData = async () => {
-    ///useEffect replace useCallback?
     await axios
-      .get(`http://localhost:5000/iterationfolder/${dataType}`, {
+      .get(`http://localhost:5000/iterationfolder/${dataType}?input=${query}`, {
         headers: {
           email: "danni@hhsc.ca", // Replace with the appropriate email value
         },
@@ -74,15 +80,24 @@ function App({ dataType }) {
       .then((res) => {
         console.log(res.data);
         const returnedData = res.data.data.output;
+        console.log(returnedData);
+        // const searchedData = res.data.data.SearchOutput;
+        // console.log(searchedData);
         const convertedTreeData = returnedData.map((items) => ({
-          id: items.FolderID,
+          id: items.ID,
           parent: items.ParentFolderID,
-          text: items.FolderName,
+          text: items.Name,
           type: items.Type,
           droppable: items.Droppable,
         }));
 
-        console.log(convertedTreeData);
+        /*   const searchedTreeData = searchedData.map((item) => ({
+          id: item.ID,
+          parent: item.ParentFolderID,
+          text: item.Name,
+          type: item.Type,
+          droppable: item.Droppable,
+        })); */
         setTreeData(convertedTreeData);
       })
       .catch((err) => {
@@ -92,7 +107,7 @@ function App({ dataType }) {
 
   useEffect(() => {
     axiosFetchData();
-  }, []);
+  }, [query]);
 
   //drag and drop funcitonality
   const handleDrop = async (newTree, options) => {
@@ -120,12 +135,9 @@ function App({ dataType }) {
         console.log(error);
       });
     setTreeData(newTree);
-    setExternalNodes(
-      externalNodes.filter((exnode) => exnode.id !== dragSourceId)
-    );
   };
 
-  //Create a new folder #questions??? the id of each node, and the email
+  //Create a new folder
   const handleSubmit = async (newNode) => {
     console.log("newnode");
     console.log(newNode);
@@ -141,13 +153,15 @@ function App({ dataType }) {
         axiosFetchData();
       })
       .catch((err) => {
-        console.log(err);
+        console.log(err.response.data.message);
+        setErrorMessage(err.response.data.message);
+        setOpen(true);
       });
 
     handleCloseDialog();
   };
 
-  //update the folder name #questions??? error 404
+  //update the folder
   const handleTextChange = async (id, text) => {
     console.log(text);
     axios
@@ -165,7 +179,7 @@ function App({ dataType }) {
       .catch((err) => console.log(err));
   };
 
-  //Delete Folder and keep the sub-folders #questions??? return Error 404
+  //Delete Folder
   const handleDelete = (id) => {
     /* const lastId = getLastId(treeData);
     const targetNode = treeData.find((node) => node.id === id);
@@ -199,15 +213,13 @@ function App({ dataType }) {
       })
       .then((res) => {
         console.log(res);
-        setTreeData((prevTreeData) =>
-          prevTreeData.filter((node) => node.id !== id)
-        );
+        axiosFetchData();
       })
       .catch((err) => console.log(err));
   };
 
   // Multiple drag
-  /* const [selectedNodes, setSelectedNodes] = useState(null);
+  const [selectedNodes, setSelectedNodes] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
   const [isCtrlPressing, setIsCtrlPressing] = useState(false);
   useEffect(() => {
@@ -232,7 +244,7 @@ function App({ dataType }) {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
     };
-  }, []); */
+  }, []);
 
   //single node selection
   const handleSingleSelect = (node) => {
@@ -297,23 +309,6 @@ function App({ dataType }) {
     setSelectedNodes([]);
   };
 
-  //External node
-  const [externalNodes, setExternalNodes] = useState(externalNode);
-  const [lastId, setlastId] = useState(105);
-
-  const handleAddExternalNode = () => {
-    const node = {
-      id: lastId,
-      parent: 0,
-      text: `External node${lastId - 100}`,
-    };
-    setExternalNodes([...externalNodes, node]);
-    setlastId(lastId + 1);
-  };
-
-  //Search Bar
-  const [query, setQuery] = useState("");
-
   return (
     <div className="app">
       <DndProvider backend={MultiBackend} options={getBackendOptions()}>
@@ -359,12 +354,40 @@ function App({ dataType }) {
             </Box>
           </Box>
         </Box>
-        <DragLayer />
+
+        <Box
+          sx={{
+            justifyContent: "flex-start",
+            display: "flex",
+            margin: "0 20px",
+          }}
+        >
+          <TextField
+            id="search-bar"
+            label="search..."
+            variant="outlined"
+            size="small"
+            value={query}
+            sx={{ marginLeft: "10px" }}
+            onChange={(e) => setQuery(e.target.value)}
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <ClearIcon
+                    sx={{ cursor: "pointer" }}
+                    onClick={() => {
+                      setQuery("");
+                    }}
+                  />
+                </InputAdornment>
+              ),
+            }}
+          ></TextField>
+        </Box>
         <Tree
           ref={ref}
           tree={treeData}
           rootId={"0"}
-          extraAcceptTypes={["EXTERNAL_NODE"]}
           render={(node, { depth, isOpen, onToggle }) => (
             <CustomNode
               node={node}
@@ -382,30 +405,27 @@ function App({ dataType }) {
           )}
           onDrop={handleDrop}
         />
-        <Box
-          sx={{
-            margin: "10px 20px",
-            height: "200px",
-            width: "auto",
-            overflowY: "auto",
-          }}
-        >
-          <Box sx={{ padding: "15px" }}>
-            <TextField
-              id="standard-basic"
-              label="Search"
-              variant="standard"
-              onChange={(e) => setQuery(e.target.value)}
-            />
-
-            {externalNode
-              .filter((node) => node.text.toLocaleLowerCase().includes(query))
-              .map((node) => (
-                <ExternalNode key={node.id} node={node} />
-              ))}
-          </Box>
-        </Box>
       </DndProvider>
+      <Snackbar
+        open={!!errorMessage} // Open if there's an error message
+        autoHideDuration={6000}
+        onClose={() => {
+          setOpen(false);
+          setErrorMessage(null);
+        }} // Clear error message on close
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }} // Adjust position here
+      >
+        <Alert
+          onClose={() => {
+            setOpen(false);
+            setErrorMessage(null);
+          }} // Clear error message on close
+          severity="info"
+          sx={{ width: "100%" }}
+        >
+          {errorMessage}
+        </Alert>
+      </Snackbar>
     </div>
   );
 }
