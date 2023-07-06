@@ -39,6 +39,7 @@ export const CustomNode = (props) => {
   const handleToggle = (e) => {
     e.stopPropagation();
     props.onToggle(props.node.id);
+    
   };
 
   const handleShowInput = () => {

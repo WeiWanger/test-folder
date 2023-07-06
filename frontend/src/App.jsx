@@ -151,14 +151,13 @@ function App({ dataType }) {
         console.log(res.data);
         setTreeData((prevTreeData) => [...prevTreeData, newNode]);
         axiosFetchData();
+        handleCloseDialog();
       })
       .catch((err) => {
         console.log(err.response.data.message);
         setErrorMessage(err.response.data.message);
         setOpen(true);
       });
-
-    handleCloseDialog();
   };
 
   //update the folder
@@ -354,7 +353,7 @@ function App({ dataType }) {
             </Box>
           </Box>
         </Box>
-
+        {/* Search functionality: search bar */}
         <Box
           sx={{
             justifyContent: "flex-start",
@@ -369,7 +368,10 @@ function App({ dataType }) {
             size="small"
             value={query}
             sx={{ marginLeft: "10px" }}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              handleOpenAll();
+            }}
             InputProps={{
               endAdornment: (
                 <InputAdornment position="end">
@@ -377,6 +379,7 @@ function App({ dataType }) {
                     sx={{ cursor: "pointer" }}
                     onClick={() => {
                       setQuery("");
+                      handleCloseAll();
                     }}
                   />
                 </InputAdornment>
@@ -408,7 +411,7 @@ function App({ dataType }) {
       </DndProvider>
       <Snackbar
         open={!!errorMessage} // Open if there's an error message
-        autoHideDuration={6000}
+        autoHideDuration={8000}
         onClose={() => {
           setOpen(false);
           setErrorMessage(null);
@@ -417,7 +420,7 @@ function App({ dataType }) {
       >
         <Alert
           onClose={() => {
-            setOpen(false);
+            // setOpen(false);
             setErrorMessage(null);
           }} // Clear error message on close
           severity="info"

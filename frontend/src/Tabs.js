@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Box, Tabs, Tab, Typography } from "@mui/material";
 import App from "./App";
-import SearchBar from "./SearchComponent/SearchBar";
+
 
 export default function IterationTabs() {
   const [value, setValue] = React.useState(0);
@@ -22,24 +22,13 @@ export default function IterationTabs() {
             margin: "0 25px",
             borderBottom: 1,
             borderColor: "divider",
+           
           }}
         >
-          <Tab
-            label="Official"
-            sx={{ fontFamily: "sans-serif", fontWeight: 600 }}
-          />
-          <Tab
-            label="Personal"
-            sx={{ fontFamily: "sans-serif", fontWeight: 600 }}
-          />
-          <Tab
-            label="Shared"
-            sx={{ fontFamily: "sans-serif", fontWeight: 600 }}
-          />
-          <Tab
-            label="Public"
-            sx={{ fontFamily: "sans-serif", fontWeight: 600 }}
-          />
+          <Tab label="Official"   sx={{ fontFamily: "sans-serif", fontWeight: 600 }}/>
+          <Tab label="Personal"   sx={{ fontFamily: "sans-serif", fontWeight: 600 }} />
+          <Tab label="Shared"  sx={{ fontFamily: "sans-serif", fontWeight: 600 }} />
+          <Tab label="Public"   sx={{ fontFamily: "sans-serif", fontWeight: 600 }}/>
         </Tabs>
       </Box>
       <Box
