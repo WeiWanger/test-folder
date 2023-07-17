@@ -413,7 +413,7 @@ function App({ dataType }) {
         open={!!errorMessage} // Open if there's an error message
         autoHideDuration={8000}
         onClose={() => {
-          setOpen(false);
+          // setOpen(false);
           setErrorMessage(null);
         }} // Clear error message on close
         anchorOrigin={{ vertical: "bottom", horizontal: "center" }} // Adjust position here

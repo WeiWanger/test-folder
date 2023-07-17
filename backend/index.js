@@ -441,11 +441,17 @@ app.post("/iterationfolder", (req, res) => {
       });
     }
     console.log(newFolder);
-    if (folders_read.find((el) => el.FolderName === newFolder.FolderName)) {
+    if (
+      folders_read.find(
+        (el) =>
+          el.FolderName === newFolder.FolderName &&
+          el.ParentFolderID === newFolder.ParentFolderID
+      )
+    ) {
       return res.status(404).json({
         status: "fail",
         message:
-          "Invalid input: Destination contains a folder with the same name.",
+          "Invalid input: Destination contains the folder with same name.",
       });
     }
 
@@ -457,6 +463,7 @@ app.post("/iterationfolder", (req, res) => {
     });
   });
 });
+
 ///////////////////////////////////////////////////////
 //MODIFY NAME (only modify folder name)//
 app.patch("/iterationfolder/:id", (req, res) => {
@@ -495,30 +502,25 @@ app.patch("/iterationfolder/:id", (req, res) => {
 });
 /////////////////////////////////////////////////////////
 
-//DRAG & DROP//
-app.patch("/iterationfolder/drag/:id", (req, res) => {
+//DRAG & DROP// report
+/* app.patch("/iterationfolder/drag/:id", (req, res) => {
   const id = req.params.id;
   let email_login = req.header("email");
-  // console.log("id: ");
-  // console.log(id);
-  // console.log("email: ");
-  // console.log(email_login);
-  // console.log("parent: ");
-  // console.log(req.body.ParentFolderID);
+
   //drag folder
   dbOperation.getfolders().then((folders_read) => {
-    const folder = folders_read.find(
-      (el) => el.FolderID === req.body.ParentFolderID
-    );
-
     if (isNaN(id)) {
-      if (!folder) {
-        //if the Iteration is not found
+      if (
+        req.body.ParentFolderID != "0" &&
+        !folders_read.find((el) => el.FolderID === req.body.ParentFolderID)
+      ) {
+        //if the item is not found
         return res.status(404).json({
           status: "fail",
-          message: "Invalid folder ID.",
+          message: "Invalid parent ID.",
         });
       }
+
       dbOperation.getfolders().then((folders_read) => {
         const folder = folders_read.find((el) => el.FolderID === id);
 
@@ -529,6 +531,159 @@ app.patch("/iterationfolder/drag/:id", (req, res) => {
             message: "Invalid folder ID.",
           });
         }
+
+        if (
+          folders_read.find(
+            (el) =>
+              el.ParentFolderID === req.body.ParentFolderID &&
+              el.FolderName === folder.FolderName
+          )
+        ) {
+          return res.status(404).json({
+            status: "fail",
+            message:
+              "The folder name conflicts with the existing folders under the parent folder.",
+          });
+        }
+        dbOperation
+          .dragFolder(id, req.body.ParentFolderID, email_login)
+          .then((feedback) => {
+            if (feedback === -1) {
+              res.status(404).json({
+                status: "fail",
+                message: "Invalid Operation: inconsistent type.",
+              });
+            } else {
+              res.status(200).json({
+                status: "success",
+                message: "Drag Performed!",
+              });
+            }
+          });
+      });
+    } else {
+      //drag file
+      if (req.body.ParentFolderID === "0") {
+        dbOperation.deleteFile(id, email_login).then(() => {
+          return res.status(200).json({
+            status: "success",
+            message: "Iteraion removed from folder!",
+          });
+        });
+      } else {
+        if (!folder) {
+          //if the Iteration is not found
+          return res.status(404).json({
+            status: "fail",
+            message: "Invalid folder ID.",
+          });
+        } else {
+          dbOperation.getIterations().then((Iters_read) => {
+            const Iter = Iters_read.find((el) => el.ID === id * 1);
+            if (!Iter) {
+              //if the Iteration is not found
+              return res.status(404).json({
+                status: "fail",
+                message: "Invalid iteration ID.",
+              });
+            }
+
+            //Determine the type of the iteration
+            let type = "official";
+            if (!Iter.OfficialFlag) {
+              type = "public";
+              if (!Iter.PublicFlag) {
+                if (Iter.AuthorEmail === Iter.OwnerEmail) {
+                  type = "personal";
+                } else {
+                  type = "shared";
+                }
+              }
+            }
+            dbOperation
+              .dragFile(id, req.body.ParentFolderID, email_login, type)
+              .then((feedback) => {
+                if (feedback === -1) {
+                  res.status(404).json({
+                    status: "fail",
+                    message: "Invalid Operation: inconsistent type.",
+                  });
+                } else {
+                  if (feedback === -2) {
+                    res.status(404).json({
+                      status: "fail",
+                      message: "Invalid Operation: inconsistent users.",
+                    });
+                  } else {
+                    res.status(200).json({
+                      status: "success",
+                      message: `Drag Performed! Iteration type: ${type}`,
+                    });
+                  }
+                }
+              });
+          });
+        }
+      }
+    }
+  });
+}); */
+
+//DRAG & DROP// re-name
+app.patch("/iterationfolder/drag/:id", (req, res) => {
+  const id = req.params.id;
+  let email_login = req.header("email");
+
+  //drag folder
+  dbOperation.getfolders().then((folders_read) => {
+    let folder = folders_read.find(
+      (el) => el.FolderID === req.body.ParentFolderID
+    );
+    if (isNaN(id)) {
+      if (req.body.ParentFolderID != "0" && !folder) {
+        //if the item is not found
+        return res.status(404).json({
+          status: "fail",
+          message: "Invalid parent ID.",
+        });
+      }
+
+      function rename(n, name, type) {
+        if (
+          folders_read.find(
+            (el) =>
+              el.ParentFolderID === req.body.ParentFolderID &&
+              el.FolderName === name && 
+              el.Type === type
+          )
+        ) {
+          let match = name.match(/\((\d+)\)$/);
+          if (match) {
+            let n = parseInt(match[1]);
+            name = name.replace(/\(\d+\)$/, `(${n + 1})`);
+            dbOperation.updateFolderName(id, name);
+          } else {
+            name = `${name}` + ` (${n + 1})`;
+            dbOperation.updateFolderName(id, name);
+          }
+          rename(n, name, type);
+        } else {
+          return;
+        }
+      }
+
+      dbOperation.getfolders().then((folders_read) => {
+        const folder = folders_read.find((el) => el.FolderID === id);
+
+        if (!folder || id === req.body.ParentFolderID) {
+          //if the folder is not found
+          return res.status(404).json({
+            status: "fail",
+            message: "Invalid folder ID.",
+          });
+        }
+
+        rename(0, folder.FolderName, folder.type);
 
         dbOperation
           .dragFolder(id, req.body.ParentFolderID, email_login)
@@ -616,14 +771,41 @@ app.patch("/iterationfolder/drag/:id", (req, res) => {
 
 /////////////////////////////////////////////////////////
 //DELETE Folder//
-app.delete("/iterationfolder/:id", (req, res) => {
+ app.delete("/iterationfolder/:id", (req, res) => {
   const email_login = req.header("email");
   id = req.params.id;
   if (isNaN(id)) {
     //delete folder
-    dbOperation.getfolders().then((Iters) => {
-      // console.log(Iters);
-      if (Iters.find((el) => el.FolderID == id)) {
+    dbOperation.getfolders().then((folders) => {
+      function rename(n, name, parent, type) {
+        if (
+          folders.find(
+            (el) =>
+              el.ParentFolderID === parent &&
+              el.FolderName === name &&
+              el.Type === type
+          )
+        ) {
+          let match = name.match(/\((\d+)\)$/);
+          if (match) {
+            let n = parseInt(match[1]);
+            name = name.replace(/\(\d+\)$/, `(${n + 1})`);
+            dbOperation.updateFolderName(id, name);
+          } else {
+            name = `${name}` + ` (${n + 1})`;
+            dbOperation.updateFolderName(id, name);
+          }
+          rename(n, name, parent, type);
+        } else {
+          return;
+        }
+      }
+
+      let folder = folders.find((el) => el.FolderID === id);
+      if (folder) {
+        for (el in folders.find((el) => el.ParentFolderID === id)) {
+          rename(0, el.FolderName, folder.ParentFolderID, el.Type);
+        }
         dbOperation.deleteFolder(id).then(() => {
           res.status(200).json({
             status: "success",
@@ -657,7 +839,10 @@ app.delete("/iterationfolder/:id", (req, res) => {
       });
     });
   }
-});
+}); 
+
+
+
 
 app.listen(API_PORT, () => {
   console.log(`App running on port ${API_PORT}...`);

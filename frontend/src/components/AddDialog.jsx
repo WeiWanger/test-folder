@@ -10,6 +10,8 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Paper,
+  Typography,
 } from "@mui/material";
 import styles from "./AddDialog.module.css";
 
@@ -29,10 +31,28 @@ export const AddDialog = (props) => {
   const [parent, setParent] = useState(0);
   // const [droppable, setDroppable] = useState(true);
 
+  const [textIsTouched, setTextIsTouched] = useState(false);
+  const textIsValid = text.trim() !== "";
+  const textHasError = !textIsValid && textIsTouched;
+
   const handleChangeText = (e) => {
     console.log(e.target.value);
     setText(e.target.value);
   };
+
+  const textBlurHandle = (e) => {
+    setTextIsTouched(true);
+  };
+
+  const reset = () => {
+    setText("");
+    setTextIsTouched(false);
+  };
+
+  let formIsValid;
+  if (text.trim() !== "") {
+    formIsValid = true;
+  }
 
   // const handleChangeEmail = (e) => {
   //   setEmail(e.target.value);
@@ -52,11 +72,18 @@ export const AddDialog = (props) => {
       <DialogTitle>Add Folder</DialogTitle>
       <DialogContent className={styles.content}>
         <div className={styles.name_input}>
-          <TextField label="Name" onChange={handleChangeText} value={text} />
+          <TextField
+            label="Name"
+            onChange={handleChangeText}
+            onBlur={textBlurHandle}
+            value={text}
+          />
         </div>
-        {/* <div className={styles.name_input}>
-          <TextField label="Email" onChange={handleChangeEmail} value={email} />
-        </div> */}
+        {textHasError && (
+          <Typography sx={{ marginLeft: "8px" }}>
+            Please enter an folder name!
+          </Typography>
+        )}
         <div>
           <FormControl className={styles.select}>
             <InputLabel>Parent</InputLabel>
@@ -75,7 +102,14 @@ export const AddDialog = (props) => {
       </DialogContent>
       <DialogActions>
         <Button onClick={props.onClose}>Cancel</Button>
-        <Button onClick={() => props.onSubmit(createdNewNode)}>Submit</Button>
+        <Button
+          onClick={() => {
+            props.onSubmit(createdNewNode);
+          }}
+          disabled={!formIsValid}
+        >
+          Submit
+        </Button>
       </DialogActions>
     </Dialog>
   );
