@@ -1,4 +1,4 @@
-.root {
+/* .root {
   align-items: center;
   display: grid;
   grid-template-columns: auto auto 1fr auto;
@@ -23,43 +23,44 @@
 }
 .expandIconWrapper.isOpen {
   transform: rotate(90deg);
-}
-.labelGridItem {
+} */
+/* .labelGridItem {
   padding-inline-start: 4px;
-}
-.folderField {
+} */
+/* .folderField {
   display: flex;
   align-items: center;
   justify-self: start;
   width: 100%;
-}
-.folder_title {
+} */
+/* .folder_title {
   width: 200px;
-}
-.actionButton {
+} */
+/* .actionButton {
   display: flex;
   padding: 0 4px;
   position: relative;
-}
-.inputWrapper {
+} */
+/* .inputWrapper {
   align-items: center;
   display: grid;
   grid-template-columns: repeat(3, auto);
   justify-content: flex-start;
-}
-.textField input {
+} */
+/* .textField input {
   font-size: 14px;
   padding: 6px 0;
-}
-.editButton {
+} */
+/* .editButton {
   padding: 6px;
-}
-.editIcon {
+} */
+/* .editIcon {
   font-size: 20px;
-}
-.nodeInput {
+} */
+/* .nodeInput {
   width: 200px;
-}
-.nodeLabel {
+} */
+/* .nodeLabel {
   padding-right: 15px;
 }
+ */

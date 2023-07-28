@@ -102,16 +102,41 @@ const dragFile = async (id, parent, email, type) => {
   let temp;
   let typeCheck = "official";
 
-  let UpdateFolder = await pool
-    .request()
-    .query(`SELECT * from FolderTable_test WHERE FolderID = '${parent}'`);
+  let folders = await pool.request().query(`SELECT * from FolderTable_test`);
+  console.log("folders:", folders);
+  console.log("parent:", parent);
+  let UpdateFolder = folders.recordset.find(
+    (el) => String(el.FolderID) === String(parent)
+  );
+  let matches = folders.recordset.filter(
+    (el) => String(el.FolderID) === String(parent)
+  );
+  console.log("matches:", matches);
 
-  if (type != UpdateFolder.recordset[0].Type) {
+  if (matches.length > 0) {
+    let UpdateFolder = matches[0];
+
+    // Check if UpdateFolder is not undefined or null
+    if (UpdateFolder) {
+      if (type != UpdateFolder.Type) {
+        return -1;
+      }
+      if (email != UpdateFolder.Email) {
+        return -2;
+      }
+    } else {
+      console.log("UpdateFolder is undefined or null");
+    }
+  } else {
+    console.log("No matches found");
+  }
+
+  /*   if (type != UpdateFolder.recordset[0].Type) {
     return -1;
   }
   if (email != UpdateFolder.recordset[0].Email) {
     return -2;
-  }
+  } */
 
   let similarIters = await pool
     .request()
@@ -120,19 +145,20 @@ const dragFile = async (id, parent, email, type) => {
         id * 1
       } and Email = '${email}'`
     );
-  console.log(similarIters.recordsets[0]);
+  // console.log(similarIters.recordsets[0]);
   // return -12;
   for (let j = 0; j < similarIters.recordsets[0].length; j++) {
     //complare the type of the iteration and the existing iteration that share the same ID and email
     temp = await pool
       .request()
       .query(
-        `SELECT Type from FolderTable_test WHERE FolderID = '${similarIters.recordsets[0][j].FolderID}'`
+        `SELECT * from FolderTable_test WHERE FolderID = '${similarIters.recordsets[0][j].FolderID}'`
       );
 
     typeCheck = temp.recordset[0].Type;
-    console.log(type);
-    console.log(typeCheck);
+    // console.log(temp.recordset[0].FolderID);
+    // console.log(type);
+    // console.log(typeCheck);
 
     if (type === typeCheck) {
       check++;
@@ -140,12 +166,21 @@ const dragFile = async (id, parent, email, type) => {
       recordEmail = temp.recordset[0].Email;
     }
   }
-  if (!check) {
-    let iterations = pool.request().query(
-      `insert into RelationTable_test values
-              ('${id * 1}','${parent}','${email}','${type}')`
-    );
+  if (check === 0) {
+    // console.log('ooooo');
+    //no such file in any folder before, so create a new row
+    let iterations = pool
+      .request()
+      .input("id", id * 1)
+      .input("parent", parent)
+      .input("email", email)
+      .input("type", type)
+      .query(
+        `insert into RelationTable_test values
+              (@id, @parent, @email, @type)`
+      );
   } else {
+    // console.log('IIIII');
     let result = await pool.request().query(
       `UPDATE RelationTable_test SET FolderID = '${parent}' WHERE ID = ${
         id * 1
@@ -192,25 +227,25 @@ const deleteFolder = async (id) => {
       );
     let oldParent = UpdateFolder.recordset[0].ParentFolderID;
 
-    let result1 = await pool
+    await pool
       .request()
       .query(
         `UPDATE FolderTable_test SET ParentFolderID = '${oldParent}' WHERE ParentFolderID = '${id}'`
       );
 
     if (oldParent === "0") {
-      let result2 = await pool
+      await pool
         .request()
         .query(`DELETE FROM RelationTable_test WHERE FolderID = '${id}'`);
     } else {
-      let result2 = await pool
+      await pool
         .request()
         .query(
-          `UPDATE RelationTable_test SET FolderID = '${oldParent}' WHERE FolderID =' ${id}'`
+          `UPDATE RelationTable_test SET FolderID = '${oldParent}' WHERE FolderID = '${id}'`
         );
     }
 
-    let result = await pool
+    await pool
       .request()
       .query(`DELETE FROM FolderTable_test WHERE FolderID = '${id}'`);
   } catch (error) {
@@ -218,7 +253,7 @@ const deleteFolder = async (id) => {
   }
 };
 //////////////////////////////////////////
-const deleteFile = async (id, email) => {
+/* const deleteFile = async (id, email) => {
   try {
     let pool = await sql.connect(config);
 
@@ -232,7 +267,7 @@ const deleteFile = async (id, email) => {
   } catch (error) {
     console.log(error);
   }
-};
+}; */
 
 module.exports = {
   getIterations,
@@ -243,5 +278,5 @@ module.exports = {
   dragFile,
   dragFolder,
   deleteFolder,
-  deleteFile,
+  // deleteFile,
 };

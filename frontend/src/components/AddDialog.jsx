@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   Button,
   Select,
@@ -10,10 +10,9 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Paper,
   Typography,
+  Box,
 } from "@mui/material";
-import styles from "./AddDialog.module.css";
 
 function identifyFolderIdStartWith(folderID) {
   if (!folderID) return false;
@@ -42,6 +41,7 @@ export const AddDialog = (props) => {
 
   const textBlurHandle = (e) => {
     setTextIsTouched(true);
+    setText((prev) => prev.trim());
   };
 
   const reset = () => {
@@ -49,7 +49,7 @@ export const AddDialog = (props) => {
     setTextIsTouched(false);
   };
 
-  let formIsValid;
+  let formIsValid = false;
   if (text.trim() !== "") {
     formIsValid = true;
   }
@@ -70,27 +70,29 @@ export const AddDialog = (props) => {
   return (
     <Dialog open={true} onClose={props.onClose}>
       <DialogTitle>Add Folder</DialogTitle>
-      <DialogContent className={styles.content}>
-        <div className={styles.name_input}>
+      <DialogContent sx={{ display: "grid", gap: "16px" }}>
+        <Box marginTop="20px">
           <TextField
+          sx={{marginTop:'5px'}}
+            variant="outlined"
             label="Name"
             onChange={handleChangeText}
             onBlur={textBlurHandle}
             value={text}
           />
-        </div>
+        </Box>
         {textHasError && (
-          <Typography sx={{ marginLeft: "8px" }}>
+          <Typography sx={{ marginLeft: "4px", color: "#3399ff" }}>
             Please enter an folder name!
           </Typography>
         )}
-        <div>
-          <FormControl className={styles.select}>
+        <Box>
+          <FormControl sx={{ width: "100%" }}>
             <InputLabel>Parent</InputLabel>
             <Select label="Parent" onChange={handleChangeParent} value={parent}>
               <MenuItem value={"0"}>(root)</MenuItem>
               {props.tree
-                .filter((node) => identifyFolderIdStartWith(node.id) === true)
+                .filter((node) => node.droppable === true)
                 .map((node) => (
                   <MenuItem key={String(node.id)} value={String(node.id)}>
                     {node.text}
@@ -98,7 +100,7 @@ export const AddDialog = (props) => {
                 ))}
             </Select>
           </FormControl>
-        </div>
+        </Box>
       </DialogContent>
       <DialogActions>
         <Button onClick={props.onClose}>Cancel</Button>

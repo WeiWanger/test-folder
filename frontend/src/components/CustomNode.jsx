@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { IconButton, Typography, TextField } from "@mui/material";
+import { IconButton, Typography, Box, TextField, Input } from "@mui/material";
 import ArrowRightIcon from "@mui/icons-material/ArrowRight";
 import Delete from "@mui/icons-material/Delete";
 import FolderIcon from "@mui/icons-material/Folder";
@@ -39,7 +39,6 @@ export const CustomNode = (props) => {
   const handleToggle = (e) => {
     e.stopPropagation();
     props.onToggle(props.node.id);
-    
   };
 
   const handleShowInput = () => {
@@ -53,6 +52,10 @@ export const CustomNode = (props) => {
 
   const handleChangeText = (e) => {
     setLabelText(e.target.value);
+  };
+
+  const handlechangeTextBlur = () => {
+    setLabelText((prev) => prev.trim());
   };
 
   const handleSubmit = () => {
@@ -72,52 +75,75 @@ export const CustomNode = (props) => {
 
   const dragOverProps = useDragOver(id, props.isOpen, props.onToggle);
   return (
-    <div
-      className={`tree-node ${styles.root} ${
-        props.isSelected ? styles.isSelected : ""
-      }`}
-      style={{ paddingInlineStart: indent, width: "20%" }}
-      {...dragOverProps}
-      onClick={handleSelect}
+    <Box
+    sx={{
+      display: 'grid',
+      gridTemplateColumns: 'auto auto 1fr auto',
+      alignItems: 'center',
+      height: '40px',
+      paddingInlineEnd: '24px',
+      ...(props.isSelected && {
+        color: '#1967d2',
+      }),
+    }}
+    style={{ paddingInlineStart: indent, width: '20%' }}
+    {...dragOverProps}
+    onClick={handleSelect}
     >
-      <div
-        className={`${styles.expandIconWrapper} ${
-          props.isOpen ? styles.isOpen : ""
-        }`}
+      <Box
+        sx={{
+          alignItems: 'center',
+          fontSize: 0,
+          cursor: 'pointer',
+          display: 'flex',
+          height: 24,
+          justifyContent: 'center',
+          width: 30,
+          transition: 'transform linear 0.1s',
+          transform: props.isOpen ? 'rotate(90deg)' : 'rotate(0deg)',
+        }}
       >
         {props.node.droppable && (
-          <div onClick={handleToggle}>
+          <Box onClick={handleToggle}>
             <ArrowRightIcon />
-          </div>
+          </Box>
         )}
-      </div>
-      <div>{props.node.droppable ? <FolderIcon /> : <DescriptionIcon />}</div>
-      <div className={styles.labelGridItem}>
+      </Box>
+      <Box>{props.node.droppable ? <FolderIcon /> : <DescriptionIcon />}</Box>
+      <Box sx={{ paddingInlineStart: '4px' }}>
         {visibleInput ? (
-          <div className={styles.inputWrapper}>
-            <input
-              className={`${styles.textField} ${styles.nodeInput}`}
+          <Box sx={{ alignItems: 'center', display: 'flex', justifyContent: 'flex-start' }}>
+            <Input
+              sx={{ width: "200px", padding: "4px 0" }}
               value={labelText}
               onChange={handleChangeText}
+              onBlur={handlechangeTextBlur}
             />
             <IconButton
-              className={styles.editButton}
+              sx={{ padding: "6px" }}
               onClick={handleSubmit}
               disabled={labelText === ""}
             >
-              <CheckIcon className={styles.editIcon} />
+              <CheckIcon sx={{ fontSize: "20px" }} />
             </IconButton>
-            <IconButton className={styles.editButton} onClick={handleCancel}>
-              <CloseIcon className={styles.editIcon} />
+            <IconButton sx={{ fontSize: "20px" }} onClick={handleCancel}>
+              <CloseIcon sx={{ fontSize: "20px" }} />
             </IconButton>
-          </div>
+          </Box>
         ) : (
-          <div className={styles.folderField}>
-            <Typography variant="body2" className={styles.folder_title}>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifySelf: "start",
+              width: "100%",
+            }}
+          >
+            <Typography variant="body2" sx={{ width: "200px" }}>
               {props.node.text}
             </Typography>
             {props.node.droppable ? (
-              <div className={styles.actionButton}>
+              <Box sx={{ display: 'flex', padding: '0 4px', position: 'relative' }}>
                 <IconButton size="small" onClick={handleShowInput}>
                   <Update fontSize="small" />
                 </IconButton>
@@ -133,13 +159,13 @@ export const CustomNode = (props) => {
                     }}
                   />
                 )}
-              </div>
+              </Box>
             ) : (
               ""
             )}
-          </div>
+          </Box>
         )}
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 };

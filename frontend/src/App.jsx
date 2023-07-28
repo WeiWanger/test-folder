@@ -130,6 +130,7 @@ function App({ dataType }) {
       )
       .then((res) => {
         console.log(res.data);
+        axiosFetchData();
       })
       .catch((error) => {
         console.log(error);
@@ -161,6 +162,7 @@ function App({ dataType }) {
   };
 
   //update the folder
+  const [updateError, setUpdateError] = useState(false);
   const handleTextChange = async (id, text) => {
     console.log(text);
     axios
@@ -175,7 +177,11 @@ function App({ dataType }) {
           )
         );
       })
-      .catch((err) => console.log(err));
+      .catch((err) => {
+        console.log(err);
+        setErrorMessage(err.response.data.message);
+        setUpdateError(true);
+      });
   };
 
   //Delete Folder
@@ -217,95 +223,10 @@ function App({ dataType }) {
       .catch((err) => console.log(err));
   };
 
-  // Multiple drag
-  const [selectedNodes, setSelectedNodes] = useState([]);
-  const [isDragging, setIsDragging] = useState(false);
-  const [isCtrlPressing, setIsCtrlPressing] = useState(false);
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key.toLowerCase() === "escape") {
-        setSelectedNodes([]);
-      } else if (e.ctrlKey || e.metaKey) {
-        setIsCtrlPressing(true);
-      }
-    };
-
-    const handleKeyUp = (e) => {
-      if (e.key.toLowerCase() === "control" || e.key.toLowerCase() === "meta") {
-        setIsCtrlPressing(false);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("keyup", handleKeyUp);
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("keyup", handleKeyUp);
-    };
-  }, []);
-
   //single node selection
+  const [selectedNodes, setSelectedNodes] = useState(null);
   const handleSingleSelect = (node) => {
     setSelectedNodes(node);
-  };
-
-  //Multi node selection
-  const handleMultiSelect = (clickedNode) => {
-    const selectIds = selectedNodes.map((node) => node.id);
-
-    //ignore if the clicked node is already selected
-    if (selectIds.includes(clickedNode.id)) {
-      return;
-    }
-    //ignore if ancestor node is alredy selected
-    if (
-      selectIds.some((selectedId) =>
-        isAncestor(treeData, selectedId, clickedNode.id)
-      )
-    ) {
-      return;
-    }
-
-    let updateNodes = [...selectedNodes];
-
-    //if descendant nodes already selected , rmove them
-    updateNodes = updateNodes.filter((selectedNode) => {
-      return !isAncestor(treeData, clickedNode.id, selectedNode.id);
-    });
-    updateNodes = [...updateNodes, clickedNode];
-    setSelectedNodes(updateNodes);
-  };
-
-  const handleClick = (e, node) => {
-    if (e.ctrlKey || e.metaKey) {
-      handleMultiSelect(node);
-    } else {
-      handleSingleSelect(node);
-    }
-  };
-
-  const handleDragStart = (node) => {
-    const isSelectedNode = selectedNodes.some((n) => n.id === node.id);
-    setIsDragging(true);
-
-    if (!isCtrlPressing && isSelectedNode) {
-      return;
-    }
-    if (!isCtrlPressing) {
-      setSelectedNodes([node]);
-      return;
-    }
-
-    if (!selectedNodes.some((n) => n.id === node.id)) {
-      setSelectedNodes([...selectedNodes, node]);
-    }
-  };
-
-  const handleDragEnd = () => {
-    setIsDragging(false);
-    setIsCtrlPressing(false);
-    setSelectedNodes([]);
   };
 
   return (
@@ -318,17 +239,19 @@ function App({ dataType }) {
             justifyContent: "flex-start",
           }}
         >
-          <Button
-            variant="outlined"
-            size="small"
-            onClick={handleOpenAll}
-            sx={{ margin: "0 10px" }}
-          >
-            Open All
-          </Button>
-          <Button variant="outlined" size="small" onClick={handleCloseAll}>
-            Close All
-          </Button>
+          <Box>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={handleOpenAll}
+              sx={{ margin: "0 10px" }}
+            >
+              Open All
+            </Button>
+            <Button variant="outlined" size="small" onClick={handleCloseAll}>
+              Close All
+            </Button>
+          </Box>
 
           {/* Add functionality: addDialog componenet */}
           <Box sx={{ display: "flex", justifyContent: "stretch" }}>
@@ -407,10 +330,12 @@ function App({ dataType }) {
             <div>{monitorProps.item.text}</div>
           )}
           onDrop={handleDrop}
+          sort={true}
         />
       </DndProvider>
       <Snackbar
         open={!!errorMessage} // Open if there's an error message
+        updateError={!!errorMessage}
         autoHideDuration={8000}
         onClose={() => {
           // setOpen(false);
